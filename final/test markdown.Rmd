@@ -1,0 +1,60 @@
+---
+title: "Practical Learning Project"
+output: html_document
+---
+
+Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+We are given 2 sets, a training set of 19622 obs of 160 variables, and a testing set with only 20 obs of 160 variables.
+
+most rows have a lot of NAs for a lot of variables. what happens, is that at some intervals, the devices were making a "full checkup" and collecting more info (maybe average of values during an interval ?) theres 406 such complete observations in the set. Outside those 406 obs, a lot of variables are NA.
+For this study, i removed the variables with NA, and/or invalid values such as "". some variables had incorrectly their format as "factor" and i converted it to numeric.
+I'm ending up with "only"" 84 variables.
+
+among the first 7 variables are 
+user_name: who did the exercise
+timestamps
+new_window: a boolean variable. "yes" if we are among the 406 obs described above
+num_window
+
+the last is
+class: a factor variable taking values A,B,C,D,E which is the value we want to predict.
+
+Now i will show you how easy it was to make a very simple model with 100% accuracy, and i insist its 100%, not 95%, not 99% not 99.5%, not 99.9%  !
+
+Before using the brute force of the CPU, let's do some exploratory data analysis to find the variables with the most explanating power. It turns out, you need only ONE variable, and that variable is called...
+num_window !
+
+yes sir, yes madam, if you simply tabulate num_window against classe, you'll find out that to each num_window correspond only one classe ! no even overlapping problem !
+
+the testing data does provide a num_window and simply making a lookup for the num_window in the table provided the correct classe of course !!! because the authors (or the teaching staff ?) didn't take the elementary precaution of using testing data OUTSIDE the training data.
+
+I've got 20/20 predictions in a few minutes, before even running a single model...
+
+Now, call me a cheater... well nobody said that you should submit the 20 values output by a ML model !
+and definitely i can call my procedure a model ! I'm ROFL when i see people in the forum complaining they can't find the right values whereas they have a so-called model with 99.5% accuracy. Any idiot can write one line of code and (over)fit a model with 99.5% accuracy. But is it really skill and what is needed to analyse data ?
+
+I feel I could end the assignment here, job done, but I'll play ball, and try to think what can we do if we DO NOT use this num_window. Lets continue some exploratory data analysis.
+
+Look at the timestamp variable together with the username and classe. we can see that the people who participated in the experience did the whole thing in a short time frame. its not like they went one day and did exercise A, and went back 1 day later to re-do it again. No, they did a set of exercise A for a short period of time, then exercise B, ... that makes the whole procedure questionable, really... even if any model was successful, it wouldn't prove it would work for even the *SAME* persons on another day (testing and validation test taken from the same data...) !!! so whats the purpose of such an analysis ???
+
+Lets not even talk about testing the data with other persons !
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+1+1
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+2+2
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
