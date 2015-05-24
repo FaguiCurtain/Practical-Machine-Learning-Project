@@ -14,7 +14,7 @@ For this study, i removed the variables with NA, and/or invalid values such as "
 I'm ending up with "only"" 84 variables.
 
 
-```{r data load,cache=TRUE}
+```{r data load,cache=TRUE,echo=FALSE}
 raw_training_data <- read.csv("pml-training.csv")
 testing  <- read.csv("pml-testing.csv")
 a <- raw_training_data
@@ -91,7 +91,9 @@ testing$skewness_roll_forearm <- as.numeric(testing$skewness_roll_forearm)
 testing$skewness_pitch_forearm <- as.numeric(testing$skewness_pitch_forearm)
 testing$max_yaw_forearm <- as.numeric(testing$max_yaw_forearm)
 testing$min_yaw_forearm <- as.numeric(testing$min_yaw_forearm)
+```
 
+```{r ,cache=TRUE,echo=TRUE}
 str(aa[,1:7])
 ```
 
@@ -136,7 +138,7 @@ answers <- hack_table2[match(index,hack_table2[,1]),2]
 I've got 20/20 predictions in a few minutes, before even running a single model...
 
 Now, call me a cheater... well nobody said that you should submit the 20 values output by a ML model !
-and definitely i can call my procedure a model ! I'm ROFL when i see people in the forum complaining they can't find the right values whereas they have a so-called model with 99.5% accuracy. Any idiot can write one line of code and (over)fit a model with 99.5% accuracy. But is it really skill and what is needed to analyse data ?
+and definitely i can call my procedure a model ! I'm ROFL when i see people in the forum complaining they can't find the right values whereas they have a so-called model with 99.5% accuracy. 
 
 I feel I could end the assignment here, job done, but I'll play ball, and try to think what can we do if we DO NOT use this num_window. Lets continue some exploratory data analysis.
 
@@ -146,6 +148,17 @@ head(aa[,c(1:5),7])
 
 Look at the timestamp variable together with the username and classe. If we browse through the data, we can see that the people who participated in the experience did the whole thing in a short time frame. its not like they went one day and did exercise A, and went back 1 day later to re-do it again. No, they did a set of exercise A for a short period of time, then exercise B, ... that makes the whole procedure questionable, really... even if any model was successful, it wouldn't prove it would work for even the *SAME* persons on another day (testing and validation test taken from the same data...) !!! 
 
+Of course, using the timestamp or any of the header variables would be cheating as much as using just num_window.
+As Tomek Pyda said on the forum 
+https://class.coursera.org/predmachlearn-014/forum/thread?thread_id=129:
+"Lets look at yaw_belt: [he plots yaw_belt vs num_window]
+
+It gives you much information about the time. Looks like some curl lifts had different starting values than others. Other variables carry a lot of information about num_window too (see yaw_belt,magnet_dumbbell_y etc)
+
+I think what we are so effectively predicting is: "to which particular exercise the data belongs to". And the classe as a result. Not how well somebody did it. That is why we can predict classes C and D."[end of Tomek's quote]
+
+one can also suspect some of the instruments were not reset when participants changed and thats altering the data.
+Unfortunately, by lack of time and information, I will ignore that. I will just have a didactic approach for the rest.
 
 Ok, for this project, as I've started a bit late, I will just focus on the RCART model, a Random Forest may be more appropriate. I was afraid of performance problems for RF, and using CARET for the RCART was already quite slow. Actually, reading the forum afterwards, it looks like randomForest using the package randomForest is quite fast, but I'm running out of time and will leave it for another day. Anyway, the rest of the discussion is more about methodology and RCART is enough for discussion about Tree modelling.
 
@@ -192,18 +205,18 @@ It turns out i've tried it, and for the same command line, the accuracy of such 
 ```
 
 so here are those 12 variables (the number is the index they have in the training1 object)
-roll_belt 1
-pitch_forearm 59
-magnet_dumbbell_y 56
-roll_forearm 58
-magnet_dumbbell_z 57
-yaw_belt 3
-accel_dumbbell_y 53
-pitch_belt 2
-magnet_belt_z 19
-accel_forearm_x 71
-roll_dumbbell 39
-total_accel_dumbbell 48
+roll_belt 1 <br>
+pitch_forearm 59 
+magnet_dumbbell_y 56 <--[we'll talk a bit about that one later] <br>
+roll_forearm 58 <br>
+magnet_dumbbell_z 57 <br>
+yaw_belt 3           <-- [remember what Tomek said about it] <br>
+accel_dumbbell_y 53 <br>
+pitch_belt 2 <br>
+magnet_belt_z 19 <br>
+accel_forearm_x 71 <br>
+roll_dumbbell 39 <br>
+total_accel_dumbbell 48 <br>
 
 Let's put these variables aside for later and try to explain why they seem important.
 
@@ -217,7 +230,7 @@ final_res <- predict(modFit1pro$finalModel,newdata=testing)
 print(colnames(final_res[,apply(final_res,1,which.max)]))
 ```
 
-accuracy is improved to 0.833. now only class B suffers from a somewhat lower sensitivity.
+accuracy is improved to over 80% (0.817). now only class B suffers from a somewhat lower sensitivity.
 we got 16/20 out of the answers of the test, more in line with the (predicted) accuracy. 
 B was wrongly predicted twice (once to A and once to C), E was predicted wrongly once to C, and B was wrongly predicted to A once. again B causes problem.
 
@@ -262,24 +275,24 @@ here's an extract of the result.
 
 Confusion Matrix and Statistics
 
-          Reference
-Prediction   A   B   C   D   E
-         A   0   0   0   0   0
-         B 192 159 157 134  38
-         C   0   0   0   0   0
-         D   9   0   0   1   0
-         E   0   0   0   0 130
+          Reference <br>
+Prediction   A   B   C   D   E <br>
+         A   0   0   0   0   0 <br>
+         B 192 159 157 134  38 <br>
+         C   0   0   0   0   0 <br>
+         D   9   0   0   1   0 <br>
+         E   0   0   0   0 130 <br>
 
-Overall Statistics
+Overall Statistics <br>
                                           
-               Accuracy : 0.3537 
+               Accuracy : 0.3537 <br>
                
 The accuracy dropped by half from 0.704 to 0.354 !!!
 Such a result puts again into perspective this study. Surely in the study we took 6 people, its because it was assumed it may be enough to predict do HAR on ANYBODY ? Looking at our procedure, we can highly suspect that if we took a testing set from a 7th person, the prediction of the model would look ugly. Remember i was already suspicious that even if the SAME person took the test again, the results would look much more ugly. Really theres 19622 obs, but theres only 6 persons doing 5 exercices, so in some sense, only 30 experiments.
 
 Also, we should be suspicious because to have a model which gets "only" to 80% accuracy like I did its already impossible to make much sense of the tree result and values.
 
-I tried fitting the same kind of CART trees to the subset of 406 observations. the accuracy was significantly below the models i showed here.
+I tried fitting the same kind of CART trees to the subset of 406 observations. the accuracy was significantly below the models i showed here for the same complexity
 
 Finally I'll show something quite interesting that I found through data exploration.
 ```{r, cache=TRUE,echo=FALSE}
@@ -289,11 +302,11 @@ print(ans3$magnet_dumbbell_y [1:12,])
 
 ```
 
-This is an extract of the range (min and max) of this series for class A and B, each with 6 observations for each participant in the experiment. notably one participant, PEDRO ! yes ! the one who made a failure of the test above, now you can see why perhaps ? that important variable that we see on the tree, has NEGATIVE values for PEDRO. has he inverted the dumbbells ? did he do his exercise upside down ? theres some big outliers in this series for other participants as well. maybe thats also why my little experiment above with pedro went SOOOO bad ! ;-)
+This is an extract of the range (min and max) of this series for class A (lines 1 to 6) and B (lines 7 to 12), each with 6 observations for each participant in the experiment. notably one participant, PEDRO (lines 6 and 12)! yes ! the one who made a failure of the test above, now you can see why perhaps ? that important variable that we see on the tree, has NEGATIVE values for PEDRO. has he inverted the dumbbells ? did he do his exercise upside down ? theres some big outliers in this series for other participants as well. maybe thats also why my little experiment above with pedro went SOOOO bad ! ;-)
 
 
 
-So overall, my personal conclusion is that while certainly the detectors can easily distinguish the more easy sitting and walking stances, the accuracy to detect B, C, D needs a more serious study and more (and cleaner) data as well. the data is very continuous and we saw that there are some artefacts (pedro) in the data. remember the final test is also used with data really INSIDE (or continuous to) the training data !
+So overall, my personal conclusion is that while certainly the detectors can easily distinguish the more easy sitting and walking stances, the accuracy to detect B, C, D needs a more serious study and more (and cleaner) data as well, with a stricter experimental procedure. the data is very continuous and we saw that there are some artefacts (pedro) in the data. remember the final test is also used with data really INSIDE (or continuous to) the training data !
 
 So we really may be overfitting data, and while its certainly possible with the data to obtain 99% accuracy (with more CPU or better code), i highly doubt that it really means that much and it would work ITRL (in the real life) as it is.
 
