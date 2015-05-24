@@ -206,7 +206,7 @@ It turns out i've tried it, and for the same command line, the accuracy of such 
 
 so here are those 12 variables (the number is the index they have in the training1 object)
 roll_belt 1 <br>
-pitch_forearm 59 
+pitch_forearm 59 <br>
 magnet_dumbbell_y 56 <--[we'll talk a bit about that one later] <br>
 roll_forearm 58 <br>
 magnet_dumbbell_z 57 <br>
@@ -287,14 +287,14 @@ Overall Statistics <br>
                                           
                Accuracy : 0.3537 <br>
                
-The accuracy dropped by half from 0.704 to 0.354 !!!
-Such a result puts again into perspective this study. Surely in the study we took 6 people, its because it was assumed it may be enough to predict do HAR on ANYBODY ? Looking at our procedure, we can highly suspect that if we took a testing set from a 7th person, the prediction of the model would look ugly. Remember i was already suspicious that even if the SAME person took the test again, the results would look much more ugly. Really theres 19622 obs, but theres only 6 persons doing 5 exercices, so in some sense, only 30 experiments.
+The accuracy dropped by half from 0.704 to 0.354 !!! the model kept predicting always B !!
+Such a result puts again into perspective these algos. Surely in the study we took 6 people, its because it was assumed it may be enough to predict do HAR on ANYBODY ? Looking at our procedure, we can highly suspect that if we took a testing set from a 7th person, the prediction of the model would look ugly. Remember i was already suspicious that even if the SAME person took the test again, the results would look much more ugly. Really theres 19622 obs, but theres only 6 persons doing 5 exercices, so in some sense, only 30 experiments.
 
 Also, we should be suspicious because to have a model which gets "only" to 80% accuracy like I did its already impossible to make much sense of the tree result and values.
 
 I tried fitting the same kind of CART trees to the subset of 406 observations. the accuracy was significantly below the models i showed here for the same complexity
 
-Finally I'll show something quite interesting that I found through data exploration.
+Now I'll show something quite interesting that I found through data exploration.
 ```{r, cache=TRUE,echo=FALSE}
 aaa <- aa[,-(3:6)]
 ans3  <-aggregate(aaa[,!names(aaa) %in% c("user_name","classe")],by=list(user_name=aaa$user_name,classe=aaa$classe),FUN=range) 
@@ -305,10 +305,61 @@ print(ans3$magnet_dumbbell_y [1:12,])
 This is an extract of the range (min and max) of this series for class A (lines 1 to 6) and B (lines 7 to 12), each with 6 observations for each participant in the experiment. notably one participant, PEDRO (lines 6 and 12)! yes ! the one who made a failure of the test above, now you can see why perhaps ? that important variable that we see on the tree, has NEGATIVE values for PEDRO. has he inverted the dumbbells ? did he do his exercise upside down ? theres some big outliers in this series for other participants as well. maybe thats also why my little experiment above with pedro went SOOOO bad ! ;-)
 
 
+In a last effort before the deadline, i wanted to try randomForest as i took courage from the fact in the forum that it could be run in reasonable time after all.
 
-So overall, my personal conclusion is that while certainly the detectors can easily distinguish the more easy sitting and walking stances, the accuracy to detect B, C, D needs a more serious study and more (and cleaner) data as well, with a stricter experimental procedure. the data is very continuous and we saw that there are some artefacts (pedro) in the data. remember the final test is also used with data really INSIDE (or continuous to) the training data !
+Here are the astonishing results:
 
-So we really may be overfitting data, and while its certainly possible with the data to obtain 99% accuracy (with more CPU or better code), i highly doubt that it really means that much and it would work ITRL (in the real life) as it is.
+```{r, cache=FALSE,echo=FALSE}
+library(randomForest)
+library(caret)
 
-I'm a bit upset I couldn't try the randomForest. and i couldnt run more tests (like isolating other guys than Pedro). I certainly started this project too late. what i find really difficult is to deal with a lot a lot of data. 160 variables !!! how can we make sense out of it ? Maybe i missed something big about the methodology ?
-I'll let you rate my work...
+
+set.seed(1234)
+
+testingRF <- testing
+uu <- is.na(apply(testingRF,2,min))
+testingRF <- testingRF[,!uu]
+testingRF <- testingRF[,-(1:7)]
+testingnames <- colnames(testingRF)
+
+uuu <- colnames(training1) %in% testingnames
+uuu[77] <- TRUE
+trainingRF <- training1[,uuu]
+
+modRF <- randomForest(classe~.,data=trainingRF,importance=TRUE,proximity=TRUE)
+print(confusionMatrix(predict(modRF,newdata=valid1),valid1$classe))
+
+```
+
+99.5% accuracy with default settings !
+
+```{r, cache=TRUE,echo=FALSE}
+# print(predict(modRF,newdata=testingRF)) try it at home, Coursera Honor Code: don't reveal answers !
+```
+
+it gets better, 20/20 on the testing set !
+
+So what are the important variables ?
+
+```{r, cache=TRUE,echo=FALSE}
+imp <- sort(importance(modRF)[,7],decreasing=TRUE)
+print(imp[1:12])
+```
+
+very interestingly, 10 out of the 12 most important variables of the RF model are the same than in the simpler CART model we documented above, who had only 69% accuracy.
+
+So, is computer science so great these days that a total noob can just press a button and get a 99.5% accurate model ? (or rather, a computer can learn everything by itself very fast ? )
+
+the answer to both questions, i fear, is YES. 
+
+However, my hunch feeling is that we are overfitting data. I highly doubt the model works as it is with 99% accuracy ITRL (in the real life). The reason is , i think the protocol of the experience is bad, so that the data is not independent (always a key assumption in statistical modelling). Actually it is almost continuous as we have seen. There are also artefacts (pedro) in the data, which means the more complex models had a turnaround to get along with the fact that Pedro was upside down (?), electrods inverted or whatever...Its great to have an intelligent system able to recognize errors made by users, but this time it may also be an error by the searchers? have they noticed such things? was it voluntary from their side ?
+
+As the data is continuous, theres in reality much less observations than 19,000. So in the validation set, theres *already* some of the data used in the training set, if not ALL of it ! and I've demonstrated that its the same for the testing set.
+
+to test that: (sorry no time for that): take only 1 every 3 or 4 row for example and see the loss of accuracy...
+
+I'd be more impressed if the RF worked with a sample of 10,000 people or 1,000 people doing 10 times the exercices at different times with data taken only every second...and I'm sure the methods used here would work fine.
+
+Also, a truly intelligent system would not look just at a photo of instant values in the instruments, but would look at how they evolve through time. thats not the approach taken by the searchers there with a testing set being instant values.
+
+

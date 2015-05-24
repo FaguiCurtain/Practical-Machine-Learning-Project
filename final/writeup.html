@@ -178,7 +178,7 @@ print(confusionMatrix(predict(modFit1,newdata=valid1),valid1$classe))</code></pr
 # training2 &lt;- training1[,-c(1,59,56,58,57,3,53,2,19,71,39,48)]
 # modFit2 &lt;- train(classe~.,method=&quot;rpart&quot;,data=training2,trControl=FitControl,tuneLength=10)
 # accuracy drops to 0.5643 with modFit2</code></pre>
-<p>so here are those 12 variables (the number is the index they have in the training1 object) roll_belt 1 <br> pitch_forearm 59 magnet_dumbbell_y 56 &lt;–[we’ll talk a bit about that one later] <br> roll_forearm 58 <br> magnet_dumbbell_z 57 <br> yaw_belt 3 &lt;– [remember what Tomek said about it] <br> accel_dumbbell_y 53 <br> pitch_belt 2 <br> magnet_belt_z 19 <br> accel_forearm_x 71 <br> roll_dumbbell 39 <br> total_accel_dumbbell 48 <br></p>
+<p>so here are those 12 variables (the number is the index they have in the training1 object) roll_belt 1 <br> pitch_forearm 59 <br> magnet_dumbbell_y 56 &lt;–[we’ll talk a bit about that one later] <br> roll_forearm 58 <br> magnet_dumbbell_z 57 <br> yaw_belt 3 &lt;– [remember what Tomek said about it] <br> accel_dumbbell_y 53 <br> pitch_belt 2 <br> magnet_belt_z 19 <br> accel_forearm_x 71 <br> roll_dumbbell 39 <br> total_accel_dumbbell 48 <br></p>
 <p>Let’s put these variables aside for later and try to explain why they seem important.</p>
 <p>Let’s keep on and move on to tuneLength=30</p>
 <pre class="r"><code>library(caret)
@@ -240,10 +240,10 @@ print(colnames(final_res[,apply(final_res,1,which.max)]))</code></pre>
 <p>Overall Statistics <br></p>
 <pre><code>           Accuracy : 0.3537 &lt;br&gt;
            </code></pre>
-<p>The accuracy dropped by half from 0.704 to 0.354 !!! Such a result puts again into perspective this study. Surely in the study we took 6 people, its because it was assumed it may be enough to predict do HAR on ANYBODY ? Looking at our procedure, we can highly suspect that if we took a testing set from a 7th person, the prediction of the model would look ugly. Remember i was already suspicious that even if the SAME person took the test again, the results would look much more ugly. Really theres 19622 obs, but theres only 6 persons doing 5 exercices, so in some sense, only 30 experiments.</p>
+<p>The accuracy dropped by half from 0.704 to 0.354 !!! the model kept predicting always B !! Such a result puts again into perspective these algos. Surely in the study we took 6 people, its because it was assumed it may be enough to predict do HAR on ANYBODY ? Looking at our procedure, we can highly suspect that if we took a testing set from a 7th person, the prediction of the model would look ugly. Remember i was already suspicious that even if the SAME person took the test again, the results would look much more ugly. Really theres 19622 obs, but theres only 6 persons doing 5 exercices, so in some sense, only 30 experiments.</p>
 <p>Also, we should be suspicious because to have a model which gets “only” to 80% accuracy like I did its already impossible to make much sense of the tree result and values.</p>
 <p>I tried fitting the same kind of CART trees to the subset of 406 observations. the accuracy was significantly below the models i showed here for the same complexity</p>
-<p>Finally I’ll show something quite interesting that I found through data exploration.</p>
+<p>Now I’ll show something quite interesting that I found through data exploration.</p>
 <pre><code>##        [,1] [,2]
 ##  [1,]   207  396
 ##  [2,]   283  435
@@ -258,9 +258,59 @@ print(colnames(final_res[,apply(final_res,1,which.max)]))</code></pre>
 ## [11,]   234  617
 ## [12,]  -730 -462</code></pre>
 <p>This is an extract of the range (min and max) of this series for class A (lines 1 to 6) and B (lines 7 to 12), each with 6 observations for each participant in the experiment. notably one participant, PEDRO (lines 6 and 12)! yes ! the one who made a failure of the test above, now you can see why perhaps ? that important variable that we see on the tree, has NEGATIVE values for PEDRO. has he inverted the dumbbells ? did he do his exercise upside down ? theres some big outliers in this series for other participants as well. maybe thats also why my little experiment above with pedro went SOOOO bad ! ;-)</p>
-<p>So overall, my personal conclusion is that while certainly the detectors can easily distinguish the more easy sitting and walking stances, the accuracy to detect B, C, D needs a more serious study and more (and cleaner) data as well, with a stricter experimental procedure. the data is very continuous and we saw that there are some artefacts (pedro) in the data. remember the final test is also used with data really INSIDE (or continuous to) the training data !</p>
-<p>So we really may be overfitting data, and while its certainly possible with the data to obtain 99% accuracy (with more CPU or better code), i highly doubt that it really means that much and it would work ITRL (in the real life) as it is.</p>
-<p>I’m a bit upset I couldn’t try the randomForest. and i couldnt run more tests (like isolating other guys than Pedro). I certainly started this project too late. what i find really difficult is to deal with a lot a lot of data. 160 variables !!! how can we make sense out of it ? Maybe i missed something big about the methodology ? I’ll let you rate my work…</p>
+<p>In a last effort before the deadline, i wanted to try randomForest as i took courage from the fact in the forum that it could be run in reasonable time after all.</p>
+<p>Here are the astonishing results:</p>
+<pre><code>## Warning: package 'randomForest' was built under R version 3.1.3</code></pre>
+<pre><code>## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1672   10    0    0    0
+##          B    2 1127   10    0    0
+##          C    0    2 1015    6    0
+##          D    0    0    1  957    0
+##          E    0    0    0    1 1082
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9946          
+##                  95% CI : (0.9923, 0.9963)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9931          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9988   0.9895   0.9893   0.9927   1.0000
+## Specificity            0.9976   0.9975   0.9984   0.9998   0.9998
+## Pos Pred Value         0.9941   0.9895   0.9922   0.9990   0.9991
+## Neg Pred Value         0.9995   0.9975   0.9977   0.9986   1.0000
+## Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Rate         0.2841   0.1915   0.1725   0.1626   0.1839
+## Detection Prevalence   0.2858   0.1935   0.1738   0.1628   0.1840
+## Balanced Accuracy      0.9982   0.9935   0.9938   0.9963   0.9999</code></pre>
+<p>99.5% accuracy with default settings !</p>
+<p>it gets better, 20/20 on the testing set !</p>
+<p>So what are the important variables ?</p>
+<pre><code>##         roll_belt          yaw_belt     pitch_forearm magnet_dumbbell_z 
+##          872.5302          629.9239          552.7861          539.3314 
+##        pitch_belt magnet_dumbbell_y      roll_forearm magnet_dumbbell_x 
+##          480.0703          475.9672          429.1212          332.2248 
+##     roll_dumbbell     magnet_belt_y  accel_dumbbell_y     magnet_belt_z 
+##          294.1145          281.8044          269.5255          267.6885</code></pre>
+<p>very interestingly, 10 out of the 12 most important variables of the RF model are the same than in the simpler CART model we documented above, who had only 69% accuracy.</p>
+<p>So, is computer science so great these days that a total noob can just press a button and get a 99.5% accurate model ? (or rather, a computer can learn everything by itself very fast ? )</p>
+<p>the answer to both questions, i fear, is YES.</p>
+<p>However, my hunch feeling is that we are overfitting data. I highly doubt the model works as it is with 99% accuracy ITRL (in the real life). The reason is , i think the protocol of the experience is bad, so that the data is not independent (always a key assumption in statistical modelling). Actually it is almost continuous as we have seen. There are also artefacts (pedro) in the data, which means the more complex models had a turnaround to get along with the fact that Pedro was upside down (?), electrods inverted or whatever…Its great to have an intelligent system able to recognize errors made by users, but this time it may also be an error by the searchers? have they noticed such things? was it voluntary from their side ?</p>
+<p>As the data is continuous, theres in reality much less observations than 19,000. So in the validation set, theres <em>already</em> some of the data used in the training set, if not ALL of it ! and I’ve demonstrated that its the same for the testing set.</p>
+<p>to test that: (sorry no time for that): take only 1 every 3 or 4 row for example and see the loss of accuracy…</p>
+<p>I’d be more impressed if the RF worked with a sample of 10,000 people or 1,000 people doing 10 times the exercices at different times with data taken only every second…and I’m sure the methods used here would work fine.</p>
+<p>Also, a truly intelligent system would not look just at a photo of instant values in the instruments, but would look at how they evolve through time. thats not the approach taken by the searchers there with a testing set being instant values.</p>
 
 
 </div>
